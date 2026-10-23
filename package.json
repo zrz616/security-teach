@@ -1,0 +1,14 @@
+{
+  "name": "security-teach",
+  "version": "1.0.0",
+  "description": "安全学习工作区：课程、参考文档与快速落地项目",
+  "main": "index.js",
+  "scripts": {
+    "digest": "node tools/kev-digest/digest.mjs",
+    "test": "echo \"no test suite yet — see lessons/\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "private": true
+}

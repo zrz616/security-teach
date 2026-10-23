@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>0001 · 用 KEV × EPSS 做出你自己的漏洞简报</title>
+<link rel="stylesheet" href="../assets/teach.css">
+</head>
+<body>
+
+<p class="lesson-meta">第 0001 课 · 约 40 分钟 · 需要终端</p>
+<h1>用 KEV × EPSS 做出你自己的漏洞简报</h1>
+<p class="subtitle">你要做安全资讯 —— 第一个真本事不是「会看新闻」，而是「能自己判优先级」。</p>
+
+<p class="lede">
+这一课结束时，你手上会有一份自己跑出来的漏洞简报，并且能对其中任何一条说清楚：
+为什么它排在前面、证据在哪、以及它对你到底算不算事。
+</p>
+
+<h2>为什么不能只有一个分数</h2>
+
+<p>
+绝大多数人刚开始读漏洞情报时，只看一个数字：CVSS。它回答的是
+<strong>「这个漏洞本身有多严重」</strong>，而排优先级要回答的是
+<strong>「它有多可能打到我」</strong>。这是两个问题，需要三个不同来源的指标一起看。
+</p>
+
+<div class="term">
+  <div class="term__name">CVSS</div>
+  <div class="term__full">Common Vulnerability Scoring System · <a href="https://www.first.org/cvss/">FIRST</a> · 当前规范 <a href="https://www.first.org/cvss/v4-0/">v4.0</a></div>
+  <p>漏洞自身的技术严重度，0–10 分。它<strong>与是否已被利用无关</strong>：CVSS 9.8 却从没人打过的高危漏洞一直都有。</p>
+</div>
+
+<div class="term">
+  <div class="term__name">EPSS</div>
+  <div class="term__full">Exploit Prediction Scoring System · <a href="https://www.first.org/epss/">FIRST</a> · <a href="https://www.first.org/epss/how-it-works">模型说明</a></div>
+  <p>未来 30 天内该漏洞被利用的<strong>概率</strong>（0–1），外加一个分位。注意它是概率，不是严重度。</p>
+</div>
+
+<div class="term">
+  <div class="term__name">KEV</div>
+  <div class="term__full">Known Exploited Vulnerabilities · <a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog">CISA 目录</a></div>
+  <p>已经被观察到<strong>在野利用</strong>的漏洞清单，每条都带修复期限。攻击链已经真实跑通，这是最硬的信号。</p>
+</div>
+
+<h2>一个反直觉的实测结果</h2>
+
+<p>
+把 KEV 目录和 EPSS 评分表拉下来对齐（命令见文末），会看到这样一组数字：
+</p>
+
+<ul>
+  <li>近 30 天<strong>新加入</strong> KEV 的条目，EPSS 中位数是 <strong>0.022</strong>；</li>
+  <li>更早进入 KEV 的<strong>存量</strong>条目，EPSS 中位数是 <strong>0.510</strong>。</li>
+</ul>
+
+<p>
+刚被确认「正在被真实利用」的漏洞，概率反而低一个数量级。结论：
+<strong>EPSS 跟随已观测到的利用活动，不是预测未来的先知</strong>。
+所以「EPSS 高 = 紧急」是错的读法，正确用法是拿它给有资产的漏洞排先后。
+</p>
+
+<div class="callout callout--warn">
+  <span class="callout__label">踩坑记录</span>
+  <p>
+  这个项目第一版是按总分把所有条目全局排序的，结果首页被 2008–2012 年的老漏洞占满；
+  改用「EPSS ≥ 0.5 就算 P0」后，<strong>1739 条里 867 条（49.9%）</strong>都进了最高档 —— 一半清单变红，等于没排。
+  信号本身没问题，是用法错了：KEV 是累积清单，日报的主体必须是<strong>增量</strong>。
+  </p>
+</div>
+
+<h2>动手：产出并读懂你的简报</h2>
+
+<ol class="steps">
+<li>
+  <p><strong>跑起来。</strong>首次运行会下载 KEV 目录（约 1.7 MB）与 EPSS 评分表（约 2.6 MB），之后走缓存。</p>
+  <pre><code>npm run digest</code></pre>
+  <p>产物：<code>out/YYYY-MM-DD.md</code>（人读）、<code>out/YYYY-MM-DD.json</code>（程序用）、<code>out/feed.xml</code>（RSS）。</p>
+</li>
+<li>
+  <p><strong>只读 P0 那一段。</strong>打开 Markdown，先看「近 30 天新增且满足勒索/高概率」的条目 —— 这才是今天值得你花时间的部分。</p>
+</li>
+<li>
+  <p><strong>交叉验证一条。</strong>挑一条 P0，去
+  <a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog">CISA 官方目录</a>搜同一个 CVE，核对
+  <code>dateAdded</code>、<code>dueDate</code>、勒索标注三项是否与本地一致。</p>
+  <p class="small">这一步是安全资讯可信度的根：你的数据管道可能只是缓存旧了，也可能是解析错了 —— 只有跟上游对账才知道。</p>
+</li>
+<li>
+  <p><strong>跟官方 API 对一次 EPSS。</strong></p>
+  <pre><code>curl -s "https://api.first.org/data/v1/epss?cve=CVE-2015-3306"</code></pre>
+  <p>比对本地简报里的 EPSS 数值：差异通常来自<strong>评分日期</strong>（EPSS 每天更新一次），而不是你的代码写错了。</p>
+</li>
+<li>
+  <p><strong>给自己出一道难题。</strong>从 P2 里挑一条，写下「我要不要修它」以及判断依据。你会发现情报本身答不了这个问题 ——
+  缺的是<strong>资产上下文</strong>：这台机器上到底装没装。</p>
+</li>
+</ol>
+
+<h3>完成检查</h3>
+<ul class="checklist">
+  <li>我能说清 CVSS / EPSS / KEV 各自回答什么问题</li>
+  <li>我能解释为什么「EPSS 高就等于严重」是错的</li>
+  <li>我交叉验证过至少一条 P0 与官方目录一致</li>
+  <li>我说出了一个只有资产测绘才能回答、情报答不了的问题</li>
+</ul>
+
+<h2>检索练习</h2>
+
+<p class="small">凭记忆答，别回头翻。点完立刻有反馈。</p>
+<p class="quiz__score" data-quiz-total></p>
+
+<div class="quiz" data-answer="1">
+  <p class="quiz__q">1. CISA KEV 目录直接回答的问题是？</p>
+  <button class="quiz__opt">漏洞本身的技术严重程度</button>
+  <button class="quiz__opt">漏洞是否已被观察到在野利用</button>
+  <button class="quiz__opt">漏洞未来三十天内被利用概率</button>
+  <p class="quiz__why" hidden>
+    严重度是 CVSS 的活，概率是 EPSS 的活。KEV 只回答「有没有已经在被真实利用」，因此它不需要再论证攻击可行性，是优先级里最硬的一票。
+  </p>
+</div>
+
+<div class="quiz" data-answer="2">
+  <p class="quiz__q">2. EPSS 分数很高，最准确的解读是？</p>
+  <button class="quiz__opt">该漏洞的技术严重度很高</button>
+  <button class="quiz__opt">该漏洞已经被实际利用了</button>
+  <button class="quiz__opt">该漏洞未来被利用概率高</button>
+  <button class="quiz__opt">该漏洞的资产影响范围大</button>
+  <p class="quiz__why" hidden>
+    EPSS 是<strong>概率</strong>：「未来 30 天内被利用的可能性」。是否「已经被利用」是 KEV（或其他利用证据）回答的问题；两者可能不一致，本课实测的 EPSS 滞后现象就是一例。
+  </p>
+</div>
+
+<div class="quiz" data-answer="0">
+  <p class="quiz__q">3. 新加入 KEV 的条目 EPSS 中位数只有 0.022，存量却是 0.510。最合理的解释是？</p>
+  <button class="quiz__opt">EPSS 跟随已观测到的利用活动</button>
+  <button class="quiz__opt">新漏洞的技术严重程度都偏低</button>
+  <button class="quiz__opt">新加入 KEV 的漏洞其实没被利用</button>
+  <p class="quiz__why" hidden>
+    KEV 的门槛就是「已观察到真实利用」，所以第三条自相矛盾；严重度与 EPSS 是两套指标，第二条也不成立。剩下唯一的解释：EPSS 的输入里包含已发生的利用活动，因此对刚被确认利用的漏洞反应滞后。
+  </p>
+</div>
+
+<div class="quiz" data-answer="1">
+  <p class="quiz__q">4. 要把 KEV 变成每天能看的简报，第一步应该做什么？</p>
+  <button class="quiz__opt">按排序分列出清单里面的全部条目</button>
+  <button class="quiz__opt">先筛出最近新增的条目再看存量部分</button>
+  <button class="quiz__opt">只保留勒索软件团伙在使用中的条目</button>
+  <button class="quiz__opt">把概率高于零点五的条目全部修掉</button>
+  <p class="quiz__why" hidden>
+    KEV 是累积清单（当前 1739 条），全量排序只会把十年前的老漏洞顶上来；而 867 条超过 0.5 概率，全修不现实。日报的主体是<strong>增量</strong>：最近新增了什么，其余作为存量备查。
+  </p>
+</div>
+
+<h2>接下来</h2>
+
+<ul>
+  <li><strong>让它自动跑</strong>：加一条 cron / GitHub Actions 定时任务，把 <code>out/feed.xml</code> 或 Markdown 推到邮箱、企业微信或 Telegram。这一步就叫「你有安全资讯能力了」。</li>
+  <li><strong>做成产品</strong>：把 <code>digest.json</code> 包一层 HTTP API（Node 原生 <code>http</code> 就够），加 <code>/v1/kev?since=7d&amp;tier=P0</code> 这类查询参数，就是一个可被别人调用的小服务。</li>
+  <li><strong>做成课程</strong>：本课踩的两个坑（全量排序、概率当严重度）就是最好的教学案例 —— 你已经在讲「为什么」，而不是「是什么」。</li>
+  <li><strong>补上缺的那一半</strong>：情报解决「会被打吗」，资产测绘解决「打得到我吗」。这是 ROADMAP 里的项目 2。</li>
+</ul>
+
+<div class="callout callout--tip">
+  <span class="callout__label">一手来源（本课首选阅读）</span>
+  <p>
+  先读 <a href="https://www.first.org/epss/how-it-works">EPSS 官方模型说明</a>（讲清概率从哪来、为什么不是严重度），
+  再看 <a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog">CISA KEV 目录页</a>的收录标准与修复期限规则。
+  两页都不长，但决定了你后面所有优先级判断的地基。
+  </p>
+</div>
+
+<p class="small">
+配套速查卡：<a href="../reference/vuln-prioritization.html">漏洞优先级速查卡</a>（指标对照 + 实测数字 + 常见误用）。
+任务背景：<a href="../MISSION.md">MISSION.md</a>。完整学习地图与项目排序：<a href="../ROADMAP.md">ROADMAP.md</a>。
+</p>
+
+<div class="ask-teacher">
+我是你的老师，随时可以打断我提问。没弄明白的地方直接问，例如：
+「EPSS 的概率是怎么算出来的？」「SSVC 的决策树长什么样？」「为什么 KEV 里会有 2015 年的漏洞被 2026 年才加进去？」
+</div>
+
+<nav class="lesson-nav">
+  <span>第 0001 课</span>
+  <span>下一课：攻击面测绘（待生成）</span>
+</nav>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

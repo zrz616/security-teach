@@ -1,0 +1,10 @@
+.git
+.gitignore
+.env
+.scanner
+.cache
+out
+node_modules
+__pycache__
+*.pyc
+*.log

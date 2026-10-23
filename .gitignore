@@ -1,0 +1,9 @@
+.cache/
+out/
+node_modules/
+.env
+.scanner/
+.agents/
+.chats/
+state/
+.DS_Store

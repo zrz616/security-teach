@@ -1,0 +1,53 @@
+name: security-teach
+
+services:
+  scanner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        GO_VERSION: "${GO_VERSION:-1.24}"
+        SUBFINDER_VERSION: "${SUBFINDER_VERSION:-latest}"
+        HTTPX_VERSION: "${HTTPX_VERSION:-latest}"
+        NUCLEI_VERSION: "${NUCLEI_VERSION:-latest}"
+    image: security-teach/projectdiscovery-scanner:local
+    # Set these when the host does not use UID/GID 1000, for example:
+    # SCANNER_UID=$(id -u) SCANNER_GID=$(id -g) docker compose run --rm scanner ...
+    user: "${SCANNER_UID:-1000}:${SCANNER_GID:-1000}"
+    working_dir: /work
+    environment:
+      HOME: /tmp
+      XDG_CONFIG_HOME: /tmp/.config
+      TMPDIR: /tmp
+    volumes:
+      - type: bind
+        source: ./.scanner/input
+        target: /work/input
+        read_only: true
+      - type: bind
+        source: ./.scanner/output
+        target: /work/output
+      - type: bind
+        source: ./tools/nuclei
+        target: /work/templates
+        read_only: true
+      - type: bind
+        source: ./.scanner/nuclei-templates
+        target: /tmp/nuclei-templates
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    stdin_open: true
+    tty: true
+    command: ["sh"]
+
+  juiceshop:
+    image: bkimminich/juice-shop:latest
+    profiles: ["lab"]
+    ports:
+      - "127.0.0.1:3000:3000"
