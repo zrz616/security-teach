@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 
-ARG GO_VERSION=1.24
+# subfinder@latest requires Go 1.26 or newer; use the patched Go 1.26 line.
+ARG GO_VERSION=1.26.10
 
 FROM golang:${GO_VERSION}-bookworm AS projectdiscovery-builder
 

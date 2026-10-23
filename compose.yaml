@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        GO_VERSION: "${GO_VERSION:-1.24}"
+        GO_VERSION: "${GO_VERSION:-1.26.10}"
         SUBFINDER_VERSION: "${SUBFINDER_VERSION:-latest}"
         HTTPX_VERSION: "${HTTPX_VERSION:-latest}"
         NUCLEI_VERSION: "${NUCLEI_VERSION:-latest}"
