@@ -43,6 +43,8 @@ docker compose run --rm scanner nuclei -update-templates -ud /tmp/nuclei-templat
 
 建议把工具版本和模板更新时间记录到运行清单中，不要在每次扫描时无记录地自动更新。
 
+运行正式联调前，必须先成功执行一次上面的模板更新命令；`-duc` 只关闭更新检查，不会下载模板。
+
 ## 本地 Juice Shop 联调
 
 只在需要本地靶场时启用 `lab` profile：
@@ -50,15 +52,37 @@ docker compose run --rm scanner nuclei -update-templates -ud /tmp/nuclei-templat
 ```bash
 docker compose --profile lab up -d juiceshop
 docker compose run --rm scanner sh -lc '
-  printf "%s\\n" juiceshop \
-    | dnsx -silent \
+  set -eu
+  resolved="$(printf "%s\\n" juiceshop | dnsx -silent -r 127.0.0.11)"
+  test -n "$resolved" || {
+    echo "juiceshop could not be resolved by Docker DNS" >&2
+    exit 1
+  }
+  printf "%s\\n" "$resolved" \
     | httpx -silent -p 3000 \
-    | tee /work/output/live-assets.txt \
-    | katana -silent -d 2 \
-    | nuclei -duc -jsonl \
-        -tags tech,misconfig,exposure \
-        -exclude-tags dos,fuzz,intrusive \
-        -o /work/output/juiceshop-findings.jsonl
+    > /work/output/live-assets.txt
+  test -s /work/output/live-assets.txt || {
+    echo "httpx found no reachable Juice Shop URL" >&2
+    exit 1
+  }
+  katana -silent -d 2 \
+    -list /work/output/live-assets.txt \
+    -o /work/output/crawled-urls.txt
+  test -s /work/output/crawled-urls.txt || {
+    echo "katana found no crawlable URL" >&2
+    exit 1
+  }
+  test -d /tmp/nuclei-templates/http || {
+    echo "official Nuclei templates are missing; run the update command first" >&2
+    exit 1
+  }
+  nuclei -duc -jsonl \
+    -l /work/output/crawled-urls.txt \
+    -t /tmp/nuclei-templates/http/technologies/ \
+    -t /tmp/nuclei-templates/http/exposures/ \
+    -t /tmp/nuclei-templates/http/misconfiguration/ \
+    -exclude-tags dos,fuzz,intrusive \
+    -o /work/output/juiceshop-findings.jsonl
 '
 docker compose --profile lab down
 ```
@@ -67,9 +91,9 @@ Compose 网络内使用 `http://juiceshop:3000`；宿主机浏览器使用 `http
 
 Juice Shop 的首轮模板建议使用以下范围：
 
-- `tech`：识别框架和组件，替代对 Astro 专用模板的假设。
-- `exposure`：检查常见敏感文件、接口文档和公开资产线索。
-- `misconfig`：检查安全响应头等配置问题。
+- `/http/technologies/`：识别框架和组件，替代对 Astro 专用模板的假设。
+- `/http/exposures/`：检查常见敏感文件、接口文档和公开资产线索。
+- `/http/misconfiguration/`：检查安全响应头等配置问题。
 
 `astro-detect.yaml` 只适合在目标确实使用 Astro 时单独验证，不作为 Juice Shop 的默认模板。
 
@@ -86,7 +110,9 @@ docker compose run --rm scanner httpx \
 docker compose run --rm scanner nuclei \
   -l /work/input/urls.txt \
   -duc \
-  -tags tech,misconfig,exposure \
+  -t /tmp/nuclei-templates/http/technologies/ \
+  -t /tmp/nuclei-templates/http/exposures/ \
+  -t /tmp/nuclei-templates/http/misconfiguration/ \
   -exclude-tags dos,fuzz,intrusive \
   -jsonl -o /work/output/juiceshop-findings.jsonl
 ```
