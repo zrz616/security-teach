@@ -6,7 +6,9 @@ ARG GO_VERSION=1.26.10
 FROM golang:${GO_VERSION}-bookworm AS projectdiscovery-builder
 
 ARG SUBFINDER_VERSION=latest
+ARG DNSX_VERSION=latest
 ARG HTTPX_VERSION=latest
+ARG KATANA_VERSION=latest
 ARG NUCLEI_VERSION=latest
 
 ENV CGO_ENABLED=0
@@ -16,7 +18,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 RUN go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@${SUBFINDER_VERSION} \
+    && go install github.com/projectdiscovery/dnsx/cmd/dnsx@${DNSX_VERSION} \
     && go install github.com/projectdiscovery/httpx/cmd/httpx@${HTTPX_VERSION} \
+    && go install github.com/projectdiscovery/katana/cmd/katana@${KATANA_VERSION} \
     && go install github.com/projectdiscovery/nuclei/v3/cmd/nuclei@${NUCLEI_VERSION}
 
 FROM python:3.12-slim-bookworm
@@ -37,7 +41,9 @@ RUN apt-get update \
     && chown -R scanner:scanner /work /tmp/nuclei-templates
 
 COPY --from=projectdiscovery-builder /go/bin/subfinder /usr/local/bin/subfinder
+COPY --from=projectdiscovery-builder /go/bin/dnsx /usr/local/bin/dnsx
 COPY --from=projectdiscovery-builder /go/bin/httpx /usr/local/bin/httpx
+COPY --from=projectdiscovery-builder /go/bin/katana /usr/local/bin/katana
 COPY --from=projectdiscovery-builder /go/bin/nuclei /usr/local/bin/nuclei
 
 ENV HOME=/tmp \

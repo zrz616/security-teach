@@ -7,7 +7,7 @@
 - `lessons/`：安全学习课程与练习
 - `research/`、`docs/research/`：研究记录
 - `tools/`：可复用工具与 Nuclei 模板
-- `Dockerfile`、`compose.yaml`：包含 Python 3、ProjectDiscovery `subfinder`、`httpx` 和 `nuclei` 的本地执行环境
+- `Dockerfile`、`compose.yaml`：包含 Python 3、ProjectDiscovery `subfinder`、`dnsx`、`httpx`、`katana` 和 `nuclei` 的本地执行环境
 - `phase1_security_learning_and_setup_todo.md`：第一阶段学习与落地清单
 
 ## Docker 执行环境
@@ -17,7 +17,7 @@
 ```bash
 mkdir -p .scanner/input .scanner/output .scanner/nuclei-templates
 docker compose build
-docker compose run --rm scanner nuclei -validate \
+docker compose run --rm scanner nuclei -duc -validate \
   -t /work/templates/astro-detect.yaml
 ```
 

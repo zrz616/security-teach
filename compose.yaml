@@ -8,7 +8,9 @@ services:
       args:
         GO_VERSION: "${GO_VERSION:-1.26.10}"
         SUBFINDER_VERSION: "${SUBFINDER_VERSION:-latest}"
+        DNSX_VERSION: "${DNSX_VERSION:-latest}"
         HTTPX_VERSION: "${HTTPX_VERSION:-latest}"
+        KATANA_VERSION: "${KATANA_VERSION:-latest}"
         NUCLEI_VERSION: "${NUCLEI_VERSION:-latest}"
     image: security-teach/projectdiscovery-scanner:local
     # Set these when the host does not use UID/GID 1000, for example:
