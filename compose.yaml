@@ -34,7 +34,7 @@ services:
         target: /work/templates
         read_only: true
       - type: bind
-        source: ./.scanner/nuclei-templates
+        source: ${HOME}/.nuclei/nuclei-templates
         target: /tmp/nuclei-templates
     read_only: true
     tmpfs:

@@ -5,7 +5,7 @@
 ## 初始化
 
 ```bash
-mkdir -p .scanner/input .scanner/output .scanner/nuclei-templates
+mkdir -p .scanner/input .scanner/output "$HOME/.nuclei/nuclei-templates"
 docker compose build
 ```
 
@@ -14,7 +14,7 @@ docker compose build
 ```bash
 export SCANNER_UID=1000
 export SCANNER_GID=1000
-chown -R 1000:1000 .scanner/nuclei-templates .scanner/output
+chown -R 1000:1000 "$HOME/.nuclei/nuclei-templates" .scanner/output
 ```
 
 如果宿主机不是 root 且当前用户 UID/GID 不是 1000，再将 `SCANNER_UID` 和 `SCANNER_GID` 设置为该非 root 用户的实际 UID/GID。
@@ -35,7 +35,7 @@ docker compose run --rm scanner nuclei -duc \
 
 ## 更新官方模板
 
-官方模板存放在被忽略的 `.scanner/nuclei-templates`，本地仓库模板则挂载到 `/work/templates`：
+官方模板存放在宿主机的 `~/.nuclei/nuclei-templates`，本地仓库模板则挂载到 `/work/templates`：
 
 ```bash
 docker compose run --rm scanner nuclei -update-templates -ud /tmp/nuclei-templates
@@ -53,13 +53,12 @@ docker compose run --rm scanner nuclei -update-templates -ud /tmp/nuclei-templat
 docker compose --profile lab up -d juiceshop
 docker compose run --rm scanner sh -lc '
   set -eu
-  resolved="$(printf "%s\\n" juiceshop | dnsx -silent -r 127.0.0.11)"
-  test -n "$resolved" || {
+  getent hosts juiceshop >/dev/null || {
     echo "juiceshop could not be resolved by Docker DNS" >&2
     exit 1
   }
-  printf "%s\\n" "$resolved" \
-    | httpx -silent -p 3000 \
+  printf "%s\\n" "http://juiceshop:3000" \
+    | httpx -silent \
     > /work/output/live-assets.txt
   test -s /work/output/live-assets.txt || {
     echo "httpx found no reachable Juice Shop URL" >&2

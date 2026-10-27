@@ -15,7 +15,7 @@
 先阅读 [docker/README.md](docker/README.md)，然后执行：
 
 ```bash
-mkdir -p .scanner/input .scanner/output .scanner/nuclei-templates
+mkdir -p .scanner/input .scanner/output "$HOME/.nuclei/nuclei-templates"
 docker compose build
 docker compose run --rm scanner nuclei -duc -validate \
   -t /work/templates/astro-detect.yaml
