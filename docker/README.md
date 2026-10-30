@@ -115,3 +115,16 @@ docker compose run --rm scanner nuclei \
   -exclude-tags dos,fuzz,intrusive \
   -jsonl -o /work/output/juiceshop-findings.jsonl
 ```
+
+## Dagger CI（WEBAPI-5）
+
+`ci/` 目录是 Dagger Go 模块，复用本目录的根 `Dockerfile` 构建 scanner，执行
+`subfinder → dnsx → httpx → katana → nuclei`，并生成
+`artifacts/webapi-5/`。本地 smoke test 不访问公网：
+
+```bash
+dagger call -m ci verify export --path artifacts/webapi-5
+dagger call -m ci check --artifacts artifacts/webapi-5
+```
+
+授权目标与 `run-manifest.json` 字段说明见仓库根目录 `ci/README.md`。

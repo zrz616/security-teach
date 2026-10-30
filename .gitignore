@@ -1,4 +1,5 @@
 .cache/
+artifacts/
 out/
 node_modules/
 .env
